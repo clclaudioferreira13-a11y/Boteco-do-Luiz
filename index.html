@@ -730,15 +730,15 @@ function updG(){
   }
   $$('glist').innerHTML=h;
 }
-function chgG(i,v){G[i].s=v;updG();updH();}
-function delG(i){G.splice(i,1);updG();updH();}
+function chgG(i,v){G[i].s=v;updG();updH();persist();}
+function delG(i){G.splice(i,1);updG();updH();persist();}
 function addG(){
   var nm=$$('gnm'),st2=$$('gst');
   var v=(nm?nm.value:'').trim();
   if(!v){toast('Digite o nome!');return;}
   G.push({n:v,s:st2?st2.value:'Confirmado'});
   if(nm)nm.value='';
-  updG();updH();toast('Adicionado: '+v);
+  updG();updH();persist();toast('Adicionado: '+v);
 }
 
 /* GASTOS */
@@ -763,14 +763,14 @@ function updE(){
   }
   $$('elist').innerHTML=h;
 }
-function delE(i){E.splice(i,1);updE();}
+function delE(i){E.splice(i,1);updE();persist();}
 function addE(){
   var it=$$('eit'),fo=$$('efo'),pg=$$('epg2'),pe=$$('epe');
   var v=(it?it.value:'').trim();
   if(!v){toast('Digite o item!');return;}
   E.push({i:v,f:(fo?fo.value.trim():'')||'---',p:parseFloat(pg?pg.value:0)||0,e:parseFloat(pe?pe.value:0)||0});
   if(it)it.value='';if(fo)fo.value='';if(pg)pg.value='';if(pe)pe.value='';
-  updE();toast('Item adicionado!');
+  updE();persist();toast('Item adicionado!');
 }
 
 /* TAREFAS */
@@ -788,24 +788,42 @@ function updT(){
   $$('tlist').innerHTML=h;
   st('std',td);st('stt',T.length);
 }
-function togT(i){T[i].d=!T[i].d;updT();updH();}
-function delT(i){T.splice(i,1);updT();}
+function togT(i){T[i].d=!T[i].d;updT();updH();persist();}
+function delT(i){T.splice(i,1);updT();persist();}
 function addT(){
   var tx=$$('ttx'),me=$$('tme');
   var v=(tx?tx.value:'').trim();
   if(!v){toast('Digite a tarefa!');return;}
   T.push({t:v,m:me?me.value.trim():'',d:false});
   if(tx)tx.value='';if(me)me.value='';
-  updT();toast('Tarefa adicionada!');
+  updT();persist();toast('Tarefa adicionada!');
 }
 
-/* SALVAR */
+/* CHAVE DE ARMAZENAMENTO */
+var KEY='bdl_luiz_v1';
+
+/* SALVAR — persiste tudo no localStorage do Safari */
+function persist(){
+  var nta=$$('nta');
+  var dados={G:G,E:E,T:T,N:nta?nta.value:''};
+  try{localStorage.setItem(KEY,JSON.stringify(dados));return true;}catch(e){return false;}
+}
 function doSave(){
-  var ok=false;
+  var ok=persist();
+  toast(ok?'Salvo! Reabrir o app vai restaurar tudo.':'Erro ao salvar');
+}
+
+/* RESTAURAR — chamado ao abrir o app */
+function restaurar(){
   try{
-    localStorage.setItem('bdlv5',JSON.stringify({G:G,E:E,T:T}));ok=true;
-  }catch(ex){}
-  toast(ok?'Salvo!':'Dados na sessao atual');
+    var raw=localStorage.getItem(KEY);
+    if(!raw)return;
+    var d=JSON.parse(raw);
+    if(d.G&&d.G.length)G=d.G;
+    if(d.E&&d.E.length)E=d.E;
+    if(d.T&&d.T.length)T=d.T;
+    if(typeof d.N==='string'){var nta=$$('nta');if(nta)nta.value=d.N;}
+  }catch(e){}
 }
 
 /* COMPARTILHAR */
@@ -844,10 +862,15 @@ function addF(inp){
   fl.innerHTML=h;
 }
 
-/* INIT — tudo sincrono, sem DOMContentLoaded */
+/* INIT */
+restaurar();   /* restaura dados salvos */
 tick();
 updH();
+updG();
+updE();
+updT();
 setInterval(tick,60000);
+setInterval(persist,15000); /* auto-salva a cada 15s */
 </script>
 </body>
 </html>
