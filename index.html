@@ -101,6 +101,15 @@ textarea.inp{min-height:150px;resize:none;line-height:1.65}
 .upt{font-size:13px;color:rgba(240,244,255,.5);display:block;line-height:1.5}
 .upt strong{color:#f9ca24}
 .fite{overflow:hidden;padding:8px 10px;background:rgba(85,239,196,.08);border:1px solid rgba(85,239,196,.2);border-radius:8px;margin-bottom:6px;font-size:12px;color:#55efc4}
+.einprow{display:flex;align-items:flex-start;gap:6px;margin-top:8px;flex-wrap:wrap}
+.einp-group{display:flex;flex-direction:column;gap:2px;flex:1;min-width:70px}
+.einp-lbl{font-size:9px;letter-spacing:1px;color:#74b9ff;text-transform:uppercase;font-weight:600}
+.einp-val{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);border-radius:8px;color:#55efc4;font-size:15px;font-weight:700;padding:7px 8px;width:100%;font-family:-apple-system,'Helvetica Neue',Helvetica,Arial,sans-serif;-webkit-appearance:none;text-align:right}
+.einp-val:focus{outline:none;border-color:#55efc4;background:rgba(85,239,196,.1)}
+.einp-pend{color:#fdcb6e}
+.einp-pend:focus{border-color:#fdcb6e;background:rgba(253,203,110,.1)}
+.einp-tot-group{min-width:70px;flex:1}
+.einp-tot-val{font-size:15px;font-weight:800;color:#f0f4ff;display:block;padding:7px 4px;text-align:right}
 /* TOAST */
 #toast{position:fixed;bottom:90px;left:50%;-webkit-transform:translateX(-50%);transform:translateX(-50%);background:#f9ca24;color:#0c2461;padding:10px 22px;border-radius:24px;font-size:13px;font-weight:700;pointer-events:none;z-index:9999;white-space:nowrap;max-width:88vw;text-align:center;display:none}
 .cf:after{content:'';display:table;clear:both}
@@ -751,17 +760,45 @@ function updE(){
   $$('ebar').style.width=pct+'%';
   for(var i=0;i<E.length;i++){
     var t=(E[i].p||0)+(E[i].e||0);
-    h+='<div class="eitem">'+
-      '<div class="ev">'+
-        (E[i].p>0?'<span class="epd">R$'+E[i].p.toFixed(2)+'</span>':'')+
-        (E[i].e>0?'<span class="edd">-R$'+E[i].e.toFixed(2)+'</span>':'')+
-        '<span class="etot">R$'+t.toFixed(2)+'</span>'+
-        '<button class="xb" onclick="delE('+i+')" style="display:block;float:none">&#x2715;</button>'+
-      '</div>'+
+    h+='<div class="eitem" id="ei'+i+'">' +
       '<div class="eif"><span class="ename">'+esc(E[i].i)+'</span><span class="eprov">'+esc(E[i].f)+'</span></div>'+
+      '<div class="einprow">'+
+        '<div class="einp-group">'+
+          '<span class="einp-lbl">Pago R$</span>'+
+          '<input class="einp-val" type="number" min="0" step="0.01" inputmode="decimal" value="'+(E[i].p||0)+'" onchange="updEval('+i+',&quot;p&quot;,this.value)" onclick="this.select()">'+
+        '</div>'+
+        '<div class="einp-group">'+
+          '<span class="einp-lbl">Pendente R$</span>'+
+          '<input class="einp-val einp-pend" type="number" min="0" step="0.01" inputmode="decimal" value="'+(E[i].e||0)+'" onchange="updEval('+i+',&quot;e&quot;,this.value)" onclick="this.select()">'+
+        '</div>'+
+        '<div class="einp-group einp-tot-group">'+
+          '<span class="einp-lbl">Total</span>'+
+          '<span class="einp-tot-val" id="etot'+i+'">R$'+t.toFixed(2)+'</span>'+
+        '</div>'+
+        '<button class="xb" onclick="delE('+i+')" style="align-self:center;margin-left:4px">&#x2715;</button>'+
+      '</div>'+
     '</div>';
   }
   $$('elist').innerHTML=h;
+}
+function updEval(i,campo,val){
+  if(campo==='p'||campo==='e')E[i][campo]=parseFloat(val)||0;
+  var t=(E[i].p||0)+(E[i].e||0);
+  var el=$$('etot'+i);if(el)el.textContent='R$'+t.toFixed(2);
+  /* recalcular totais do topo */
+  var pg=0,ad=0;
+  for(var j=0;j<E.length;j++){pg+=E[j].p||0;ad+=E[j].e||0;}
+  var tot=pg+ad,pct=tot>0?Math.round(pg/tot*100):0;
+  st('epg','R$'+pg.toFixed(2));st('epd','R$'+ad.toFixed(2));
+  st('ett','R$'+tot.toFixed(2));st('epct',pct+'%');
+  $$('ebar').style.width=pct+'%';
+  /* atualizar home */
+  var sc2=0,sad2=0;
+  for(var j=0;j<E.length;j++){sc2+=E[j].p||0;sad2+=E[j].e||0;}
+  st('spg','R$'+sc2.toFixed(2));st('sad','R$'+sad2.toFixed(2));
+  var t2=sc2+sad2,p2=t2>0?Math.round(sc2/t2*100):0;
+  st('spct',p2+'%');$$('sbar').style.width=p2+'%';
+  persist();
 }
 function delE(i){E.splice(i,1);updE();persist();}
 function addE(){
